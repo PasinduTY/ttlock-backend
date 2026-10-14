@@ -1,0 +1,6 @@
+@TTLockBackend_HostAddress = http://localhost:5007
+
+GET {{TTLockBackend_HostAddress}}/health
+Accept: application/json
+
+###
