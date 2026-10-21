@@ -1,8 +1,20 @@
+using Microsoft.EntityFrameworkCore;
+using TTLockBackend.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+
+// SQLite resolves a relative path against the current directory, which
+// depends on where `dotnet run` was typed. Anchoring it to the content root
+// means there is only ever one database, whichever folder you start from.
+var dbPath = Path.Combine(
+    builder.Environment.ContentRootPath,
+    builder.Configuration["Database:Path"] ?? "ttlock.db");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite($"Data Source={dbPath}"));
 
 var app = builder.Build();
 
