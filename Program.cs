@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using TTLockBackend.Data;
+using TTLockBackend.Endpoints;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,5 +31,10 @@ app.UseHttpsRedirection();
 // touches no database, so it answers "is the backend there?" and nothing else.
 app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }))
     .WithName("Health");
+
+// No login yet: until step C (encryption) and login exist, use fake lockData
+// only. The server listens on localhost, so only this PC and a phone on
+// `adb reverse` can reach it.
+app.MapLockEndpoints();
 
 app.Run();

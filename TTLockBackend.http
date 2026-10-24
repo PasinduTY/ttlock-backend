@@ -1,6 +1,56 @@
 @TTLockBackend_HostAddress = http://localhost:5007
 
+# FAKE lockData only in this file. It is committed to git.
+
 GET {{TTLockBackend_HostAddress}}/health
 Accept: application/json
+
+###
+
+# List every lock.
+GET {{TTLockBackend_HostAddress}}/locks
+Accept: application/json
+
+###
+
+# Register a lock. Expect 201 Created; sending it twice gives 409 Conflict.
+POST {{TTLockBackend_HostAddress}}/locks
+Content-Type: application/json
+
+{
+  "mac": "aa:bb:cc:dd:ee:01",
+  "name": "Test door",
+  "lockData": "FAKE-LOCKDATA-1",
+  "lockVersion": "{\"fake\":true}"
+}
+
+###
+
+# Invalid input. Expect 400 with an error per bad field.
+POST {{TTLockBackend_HostAddress}}/locks
+Content-Type: application/json
+
+{
+  "mac": "not-a-mac",
+  "name": "",
+  "lockData": "FAKE"
+}
+
+###
+
+# Replace a lock's credential. Expect 200; 404 for an unknown MAC.
+PUT {{TTLockBackend_HostAddress}}/locks/AA:BB:CC:DD:EE:01
+Content-Type: application/json
+
+{
+  "name": "Test door (renamed)",
+  "lockData": "FAKE-LOCKDATA-2",
+  "lockVersion": "{\"fake\":true}"
+}
+
+###
+
+# Remove a lock. Expect 204; a second time gives 404.
+DELETE {{TTLockBackend_HostAddress}}/locks/AA:BB:CC:DD:EE:01
 
 ###
