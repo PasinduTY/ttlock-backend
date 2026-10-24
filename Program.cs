@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using TTLockBackend.Data;
 using TTLockBackend.Endpoints;
@@ -16,6 +17,25 @@ var dbPath = Path.Combine(
     builder.Configuration["Database:Path"] ?? "ttlock.db");
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}"));
+
+// The keys that encrypt lockData in the database. They live in keys/
+// (gitignored), apart from the database: a stolen database alone is useless.
+//
+// LOSING THESE KEYS LOSES EVERY LOCK. Without them nothing in the database
+// can be decrypted, and each lock needs a physical factory reset. Back up
+// keys/ together with ttlock.db, always as a pair.
+var dataProtection = builder.Services.AddDataProtection()
+    .SetApplicationName("TTLockBackend")
+    .PersistKeysToFileSystem(
+        new DirectoryInfo(Path.Combine(builder.Environment.ContentRootPath, "keys")));
+
+if (OperatingSystem.IsWindows())
+{
+    // Also encrypt the key files themselves with Windows DPAPI, tied to this
+    // Windows user. A copy of keys/ is useless on another machine or account.
+    // A Linux server will need a different choice; decide that at deployment.
+    dataProtection.ProtectKeysWithDpapi();
+}
 
 var app = builder.Build();
 
