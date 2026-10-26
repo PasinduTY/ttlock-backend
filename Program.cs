@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using TTLockBackend;
 using TTLockBackend.Data;
 using TTLockBackend.Endpoints;
 
@@ -39,6 +40,13 @@ if (OperatingSystem.IsWindows())
 
 var app = builder.Build();
 
+// `dotnet run -- add-admin <name>` and friends run here and exit, without
+// ever starting the web server.
+if (await AdminCommands.TryRunAsync(app, args) is int exitCode)
+{
+    return exitCode;
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -52,9 +60,9 @@ app.UseHttpsRedirection();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }))
     .WithName("Health");
 
-// No login yet: until step C (encryption) and login exist, use fake lockData
-// only. The server listens on localhost, so only this PC and a phone on
-// `adb reverse` can reach it.
+// No login yet (step L3 adds it). Tolerable only because the server listens
+// on localhost, so just this PC and a phone on `adb reverse` can reach it.
 app.MapLockEndpoints();
 
 app.Run();
+return 0;

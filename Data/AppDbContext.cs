@@ -25,6 +25,8 @@ public class AppDbContext(
 
     public DbSet<LockRecord> Locks => Set<LockRecord>();
 
+    public DbSet<AdminUser> Admins => Set<AdminUser>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // EF builds this model once and reuses it for every context, so the
@@ -57,6 +59,18 @@ public class AppDbContext(
             entity.Property(l => l.LockData).HasConversion(
                 plain => lockDataProtector.Protect(plain),
                 stored => lockDataProtector.Unprotect(stored));
+        });
+
+        modelBuilder.Entity<AdminUser>(entity =>
+        {
+            entity.ToTable("Admins");
+
+            // Enforced by the database itself, so two accounts can never share
+            // a name, even if two "add" commands ran at the same moment.
+            entity.HasIndex(a => a.Username).IsUnique();
+            entity.Property(a => a.Username).HasMaxLength(32);
+
+            entity.Property(a => a.CreatedAt).HasConversion(UtcConverter);
         });
     }
 }
