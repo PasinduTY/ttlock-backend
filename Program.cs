@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using TTLockBackend;
+using TTLockBackend.Auth;
 using TTLockBackend.Data;
 using TTLockBackend.Endpoints;
 
@@ -38,6 +39,9 @@ if (OperatingSystem.IsWindows())
     dataProtection.ProtectKeysWithDpapi();
 }
 
+// One instance for the whole app: it holds the signing key, nothing per-request.
+builder.Services.AddSingleton<TokenService>();
+
 var app = builder.Build();
 
 // `dotnet run -- add-admin <name>` and friends run here and exit, without
@@ -46,6 +50,10 @@ if (await AdminCommands.TryRunAsync(app, args) is int exitCode)
 {
     return exitCode;
 }
+
+// Create the token service now, so a missing or weak signing key stops the
+// server at startup with instructions, rather than at the first login.
+_ = app.Services.GetRequiredService<TokenService>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -60,8 +68,10 @@ app.UseHttpsRedirection();
 app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }))
     .WithName("Health");
 
-// No login yet (step L3 adds it). Tolerable only because the server listens
-// on localhost, so just this PC and a phone on `adb reverse` can reach it.
+app.MapAuthEndpoints();
+
+// Not protected yet (step L3 adds that). Tolerable only because the server
+// listens on localhost, so just this PC and a phone on `adb reverse` can reach it.
 app.MapLockEndpoints();
 
 app.Run();

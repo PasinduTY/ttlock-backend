@@ -7,6 +7,19 @@ Accept: application/json
 
 ###
 
+# Log in. Expect 200 with a token; 401 (no body) for any wrong name or password.
+# Type your password here only while testing, and don't commit it:
+# this file is tracked by git.
+POST {{TTLockBackend_HostAddress}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "pasindu",
+  "password": "REPLACE-WHILE-TESTING"
+}
+
+###
+
 # List every lock.
 GET {{TTLockBackend_HostAddress}}/locks
 Accept: application/json
