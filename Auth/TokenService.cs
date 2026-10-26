@@ -18,7 +18,7 @@ namespace TTLockBackend.Auth;
 /// </remarks>
 public sealed class TokenService
 {
-    public TokenService(IConfiguration configuration)
+    public TokenService(IConfiguration configuration, IHostEnvironment environment)
     {
         var encodedKey = configuration["Jwt:SigningKey"];
         byte[] keyBytes;
@@ -35,9 +35,16 @@ public sealed class TokenService
         // every token forgeable, so the server refuses to start without one.
         if (keyBytes.Length < 32)
         {
+            // The most common cause isn't a missing secret but the wrong
+            // environment: user-secrets are only read in Development, so say
+            // which environment this is.
+            var hint = environment.IsDevelopment()
+                ? "Store one with `dotnet user-secrets set Jwt:SigningKey <base64 of 64 random bytes>`."
+                : $"This is running in the '{environment.EnvironmentName}' environment, and " +
+                  "user-secrets are only loaded in Development. Start it with " +
+                  "`dotnet run --launch-profile http`, which sets Development.";
             throw new InvalidOperationException(
-                "Jwt:SigningKey is missing or shorter than 32 bytes. In development, " +
-                "store one with `dotnet user-secrets set Jwt:SigningKey <base64 of 64 random bytes>`.");
+                $"Jwt:SigningKey is missing or shorter than 32 bytes. {hint}");
         }
 
         SigningKey = new SymmetricSecurityKey(keyBytes);
