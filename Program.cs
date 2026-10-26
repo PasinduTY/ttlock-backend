@@ -41,6 +41,7 @@ if (OperatingSystem.IsWindows())
 
 // One instance for the whole app: it holds the signing key, nothing per-request.
 builder.Services.AddSingleton<TokenService>();
+builder.Services.AddAdminAuthentication();
 
 var app = builder.Build();
 
@@ -63,15 +64,20 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Order matters: first work out WHO is calling (read and check the token),
+// then decide whether they're ALLOWED to call this endpoint.
+app.UseAuthentication();
+app.UseAuthorization();
+
 // Proves the server is up and reachable. Deliberately needs no login and
 // touches no database, so it answers "is the backend there?" and nothing else.
 app.MapGet("/health", () => Results.Ok(new { status = "ok", time = DateTime.UtcNow }))
     .WithName("Health");
 
+// Open to anyone: you can't be logged in before you log in.
 app.MapAuthEndpoints();
 
-// Not protected yet (step L3 adds that). Tolerable only because the server
-// listens on localhost, so just this PC and a phone on `adb reverse` can reach it.
+// Every /locks endpoint requires a valid token for an existing admin.
 app.MapLockEndpoints();
 
 app.Run();

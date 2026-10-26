@@ -39,8 +39,10 @@ public static class LockEndpoints
 
     public static void MapLockEndpoints(this IEndpointRouteBuilder app)
     {
-        // A route group: every endpoint below lives under /locks.
-        var group = app.MapGroup("/locks");
+        // A route group: every endpoint below lives under /locks, and requires
+        // login. Set once on the group, so a new endpoint added here later
+        // can't be accidentally left open.
+        var group = app.MapGroup("/locks").RequireAuthorization();
 
         group.MapGet("/", GetAll);
         group.MapPost("/", Create);
